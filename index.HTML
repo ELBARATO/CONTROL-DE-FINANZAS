@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Financiero</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        input, select { border: 1px solid #e5e7eb; padding: 0.5rem; border-radius: 0.5rem; width: 100%; font-size: 0.875rem; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 1.5rem; }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="mb-6 flex flex-col md:row justify-between items-center gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-3xl font-bold text-gray-800">📊 Kevin Finance <span class="text-blue-500 text-sm font-normal">PRO</span></h1>
+                <p class="text-gray-500">Porque todo pequeño esfuerzo de hoy es la satisfacción del mañana.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-end">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Período de vista</label>
+                    <select id="month-filter" onchange="updateDashboard()" class="bg-white border-none font-bold text-blue-600 focus:ring-0 cursor-pointer">
+                        <option value="all">Todo el tiempo</option>
+                        <option value="01">Enero</option>
+                        <option value="02">Febrero</option>
+                        <option value="03">Marzo</option>
+                        <option value="04">Abril</option>
+                        <option value="05">Mayo</option>
+                        <option value="06">Junio</option>
+                        <option value="07">Julio</option>
+                        <option value="08">Agosto</option>
+                        <option value="09">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12" selected>Diciembre</option>
+                    </select>
+                </div>
+                <button onclick="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    CSV
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="card bg-blue-600 text-white">
+                <p class="text-xs opacity-80 font-semibold uppercase">Saldo Disponible</p>
+                <p class="text-xl md:text-2xl font-bold" id="dash-total">Q 0.00</p>
+            </div>
+            <div class="card bg-white border-l-4 border-green-500">
+                <p class="text-xs text-gray-400 font-semibold uppercase">Ingresos</p>
+                <p class="text-xl font-bold text-gray-800" id="dash-ingresos">Q 0.00</p>
+            </div>
+            <div class="card bg-white border-l-4 border-red-500">
+                <p class="text-xs text-gray-400 font-semibold uppercase">Gastos</p>
+                <p class="text-xl font-bold text-gray-800" id="dash-gastos">Q 0.00</p>
+            </div>
+            <div class="card bg-white border-l-4 border-orange-400">
+                <p class="text-xs text-gray-400 font-semibold uppercase">En Préstamos</p>
+                <p class="text-xl font-bold text-gray-800" id="dash-prestado">Q 0.00</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <nav class="flex overflow-x-auto space-x-6 border-b border-gray-200 mb-8 pb-1">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-2 py-2 font-bold whitespace-nowrap tab-active">🏠 Dashboard</button>
+            <button onclick="switchTab('ingresos')" id="btn-ingresos" class="px-2 py-2 font-medium whitespace-nowrap text-gray-500">🟢 Ingresos</button>
+            <button onclick="switchTab('gastos_fijos')" id="btn-gastos_fijos" class="px-2 py-2 font-medium whitespace-nowrap text-gray-500">🔴 Fijos</button>
+            <button onclick="switchTab('gastos_variables')" id="btn-gastos_variables" class="px-2 py-2 font-medium whitespace-nowrap text-gray-500">🟡 Variables</button>
+            <button onclick="switchTab('prestamos')" id="btn-prestamos" class="px-2 py-2 font-medium whitespace-nowrap text-gray-500">🔵 Préstamos</button>
+            <button onclick="switchTab('ahorros')" id="btn-ahorros" class="px-2 py-2 font-medium whitespace-nowrap text-gray-500">🟣 Ahorros</button>
+        </nav>
+
+        <!-- Sections -->
+        <main>
+            <section id="sec-dashboard">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Fondo de Emergencia -->
+                    <div class="card bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">🛟 Fondo de Emergencia</h3>
+                                <p class="text-xs text-gray-400">Tu red de seguridad</p>
+                            </div>
+                            <span class="text-2xl">🛡️</span>
+                        </div>
+                        <div id="emergency-ui">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Metas de Ahorro Especiales -->
+                    <div class="card">
+                        <h3 class="font-bold text-gray-800 mb-4">🎯 Metas Activas</h3>
+                        <div id="goals-list" class="space-y-4">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Alertas -->
+                    <div id="alert-zone" class="md:col-span-2">
+                        <!-- Warnings like "Vas fuerte en variables" injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-editor" class="hidden">
+                <div class="card mb-6">
+                    <h3 id="editor-title" class="text-xl font-bold mb-4 text-gray-800">Nuevo Registro</h3>
+                    <form id="entry-form" class="space-y-4">
+                        <div id="form-fields" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <!-- Form fields -->
+                        </div>
+                        <button type="submit" class="w-full md:w-auto bg-blue-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-700 transition">Guardar Registro</button>
+                    </form>
+                </div>
+
+                <div class="card overflow-x-auto p-0">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr id="table-head" class="text-gray-500 text-[10px] uppercase tracking-wider">
+                                <!-- Headers -->
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="text-sm divide-y divide-gray-100">
+                            <!-- Data -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para ciclo de préstamo -->
+    <div id="loan-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 class="text-xl font-bold mb-2">¡Préstamo devuelto! 🎉</h3>
+            <p class="text-gray-600 mb-6 text-sm">¿Deseas registrar estos <span id="loan-amount-modal" class="font-bold"></span> como un ingreso automático en tu cuenta?</p>
+            <div class="flex gap-3">
+                <button onclick="processLoanReturn(true)" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold">Sí, sumarlo</button>
+                <button onclick="processLoanReturn(false)" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-bold">No, solo marcar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure & State
+        let currentTab = 'dashboard';
+        let pendingLoanReturn = null;
+        let data = JSON.parse(localStorage.getItem('kevin_finance_pro')) || {
+            ingresos: [{ id: 1, fecha: '2025-12-05', concepto: 'Sueldo', monto: 4000, cuenta: 'Banco' }],
+            gastos_fijos: [{ id: 1, mes: '2025-12', concepto: 'Impuestos', monto: 200 }],
+            gastos_variables: [],
+            prestamos: [{ id: 1, fecha: '2025-12-15', persona: 'Familiar', monto: 500, estado: 'Pendiente', espera: '2026-01-15' }],
+            ahorros: [
+                { id: 1, fecha: '2025-12-05', tipo: 'Fondo Emergencia', monto: 1200, objetivo: 'Fondo Emergencia', meta_monto: 5000 },
+                { id: 2, fecha: '2025-12-05', tipo: 'Compra', monto: 1300, objetivo: 'S26 Ultra', meta_monto: 10000, fecha_limite: '2026-08-30' }
+            ]
+        };
+
+        const config = {
+            ingresos: { fields: ['fecha', 'concepto', 'monto', 'cuenta'], labels: ['Fecha', 'Concepto', 'Monto (Q)', 'Cuenta'] },
+            gastos_fijos: { fields: ['fecha', 'concepto', 'monto'], labels: ['Fecha', 'Concepto', 'Monto (Q)'] },
+            gastos_variables: { fields: ['fecha', 'concepto', 'monto', 'metodo'], labels: ['Fecha', 'Concepto', 'Monto (Q)', 'Método'] },
+            prestamos: { fields: ['fecha', 'persona', 'monto', 'estado', 'espera'], labels: ['Fecha', 'Persona', 'Monto (Q)', 'Estado', 'Vence'], types: {estado: 'select'} },
+            ahorros: { fields: ['fecha', 'tipo', 'monto', 'objetivo', 'meta_monto', 'fecha_limite'], labels: ['Fecha', 'Categoría', 'Monto (Q)', 'Nombre Meta', 'Meta Total (Q)', 'Fecha Límite'] }
+        };
+
+        function saveData() {
+            localStorage.setItem('kevin_finance_pro', JSON.stringify(data));
+            updateDashboard();
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('tab-active', 'font-bold');
+                btn.classList.add('text-gray-500');
+            });
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.add('tab-active', 'font-bold');
+            activeBtn.classList.remove('text-gray-500');
+
+            if (tabId === 'dashboard') {
+                document.getElementById('sec-dashboard').classList.remove('hidden');
+                document.getElementById('sec-editor').classList.add('hidden');
+                updateDashboard();
+            } else {
+                document.getElementById('sec-dashboard').classList.add('hidden');
+                document.getElementById('sec-editor').classList.remove('hidden');
+                renderEditor();
+            }
+        }
+
+        function filterByMonth(list) {
+            const filter = document.getElementById('month-filter').value;
+            if (filter === 'all') return list;
+            return list.filter(item => {
+                const date = item.fecha || "";
+                return date.split('-')[1] === filter;
+            });
+        }
+
+        function updateDashboard() {
+            const f_ingresos = filterByMonth(data.ingresos);
+            const f_fijos = filterByMonth(data.gastos_fijos);
+            const f_variables = filterByMonth(data.gastos_variables);
+            const f_ahorros = filterByMonth(data.ahorros);
+            
+            const totalIngresos = f_ingresos.reduce((s, i) => s + Number(i.monto), 0);
+            const totalGastos = f_fijos.reduce((s, i) => s + Number(i.monto), 0) + f_variables.reduce((s, i) => s + Number(i.monto), 0);
+            const totalAhorradoMes = f_ahorros.reduce((s, i) => s + Number(i.monto), 0);
+            
+            // Prestado acumulado (esto suele ser global, no solo mensual)
+            const totalPrestado = data.prestamos.filter(p => p.estado === 'Pendiente').reduce((s, i) => s + Number(i.monto), 0);
+            
+            const saldo = totalIngresos - totalGastos - totalAhorradoMes;
+
+            document.getElementById('dash-ingresos').innerText = `Q ${totalIngresos.toLocaleString()}`;
+            document.getElementById('dash-gastos').innerText = `Q ${totalGastos.toLocaleString()}`;
+            document.getElementById('dash-total').innerText = `Q ${saldo.toLocaleString()}`;
+            document.getElementById('dash-prestado').innerText = `Q ${totalPrestado.toLocaleString()}`;
+
+            renderEmergencyProg();
+            renderGoals();
+            renderAlerts(f_variables);
+        }
+
+        function renderEmergencyProg() {
+            // Buscamos todos los registros históricos de ahorro tipo Fondo Emergencia
+            const totalFE = data.ahorros
+                .filter(a => a.tipo === 'Fondo Emergencia' || a.objetivo === 'Fondo Emergencia')
+                .reduce((s, i) => s + Number(i.monto), 0);
+            
+            // Tomamos la meta del último registro o 5000 por defecto
+            const metaFE = data.ahorros.find(a => a.objetivo === 'Fondo Emergencia')?.meta_monto || 5000;
+            const perc = Math.min((totalFE / metaFE) * 100, 100).toFixed(0);
+
+            document.getElementById('emergency-ui').innerHTML = `
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-2xl font-bold">Q ${totalFE.toLocaleString()}</span>
+                    <span class="text-sm opacity-70">Meta: Q ${Number(metaFE).toLocaleString()}</span>
+                </div>
+                <div class="w-full bg-white bg-opacity-20 rounded-full h-3 mb-2">
+                    <div class="bg-blue-400 h-3 rounded-full progress-bar" style="width: ${perc}%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+                    <span>Progreso</span>
+                    <span>${perc}%</span>
+                </div>
+            `;
+        }
+
+        function renderGoals() {
+            const goalsList = document.getElementById('goals-list');
+            // Agrupar ahorros por objetivo (excluyendo Fondo Emergencia que tiene su box)
+            const uniqueGoals = [...new Set(data.ahorros.filter(a => a.objetivo !== 'Fondo Emergencia').map(a => a.objetivo))];
+            
+            if (uniqueGoals.length === 0) {
+                goalsList.innerHTML = `<p class="text-gray-400 text-xs italic text-center py-4">No hay metas activas. ¡Crea una en Ahorros!</p>`;
+                return;
+            }
+
+            goalsList.innerHTML = uniqueGoals.map(gName => {
+                const logs = data.ahorros.filter(a => a.objetivo === gName);
+                const total = logs.reduce((s, i) => s + Number(i.monto), 0);
+                const meta = logs[0].meta_monto || 1;
+                const perc = Math.min((total / meta) * 100, 100).toFixed(0);
+                const fecha = logs[0].fecha_limite;
+                
+                let sugerencia = "";
+                if (fecha && total < meta) {
+                    const mesesRestantes = Math.max(1, (new Date(fecha) - new Date()) / (1000 * 60 * 60 * 24 * 30));
+                    const mensual = ((meta - total) / mesesRestantes).toFixed(0);
+                    sugerencia = `<p class="text-[10px] text-blue-500 font-semibold mt-1">Sugerido: Q ${mensual}/mes</p>`;
+                }
+
+                return `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">${gName}</span>
+                            <span class="text-gray-400">Q ${total.toLocaleString()} / ${Number(meta).toLocaleString()}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5">
+                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${perc}%"></div>
+                        </div>
+                        ${sugerencia}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAlerts(variablesMes) {
+            const totalV = variablesMes.reduce((s, i) => s + Number(i.monto), 0);
+            const alertZone = document.getElementById('alert-zone');
+            if (totalV > 1000) {
+                alertZone.innerHTML = `
+                    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg flex items-center gap-3">
+                        <span class="text-xl">⚠️</span>
+                        <div>
+                            <p class="text-sm font-bold text-orange-800">Ojo: Los gastos variables van altos (Q ${totalV.toLocaleString()})</p>
+                            <p class="text-xs text-orange-700">Revisa si son "tentaciones" o necesidades reales.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                alertZone.innerHTML = '';
+            }
+        }
+
+        function renderEditor() {
+            const conf = config[currentTab];
+            const fieldsContainer = document.getElementById('form-fields');
+            const headContainer = document.getElementById('table-head');
+            
+            fieldsContainer.innerHTML = conf.fields.map((f, i) => {
+                if (f === 'estado') {
+                    return `<div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">${conf.labels[i]}</label>
+                        <select id="input-${f}">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Devuelto">Devuelto</option>
+                        </select>
+                    </div>`;
+                }
+                return `<div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase">${conf.labels[i]}</label>
+                    <input type="${f.includes('monto') ? 'number' : f === 'fecha' || f === 'espera' || f === 'fecha_limite' ? 'date' : 'text'}" id="input-${f}" placeholder="${conf.labels[i]}">
+                </div>`;
+            }).join('');
+
+            headContainer.innerHTML = conf.labels.map(l => `<th class="px-4 py-3">${l}</th>`).join('') + '<th class="px-4 py-3 text-right"></th>';
+            renderRows();
+        }
+
+        function renderRows() {
+            const body = document.getElementById('table-body');
+            const conf = config[currentTab];
+            const rows = data[currentTab].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+            body.innerHTML = rows.map(item => `
+                <tr class="hover:bg-gray-50 group">
+                    ${conf.fields.map(f => {
+                        let val = item[f] || '-';
+                        let classList = "px-4 py-3";
+                        if (f.includes('monto')) val = `<b>Q ${Number(val).toLocaleString()}</b>`;
+                        if (f === 'estado') {
+                            const color = val === 'Devuelto' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700';
+                            val = `<span onclick="toggleLoanState(${item.id}, '${item.estado}')" class="cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-bold ${color}">${val}</span>`;
+                        }
+                        return `<td class="${classList}">${val}</td>`;
+                    }).join('')}
+                    <td class="px-4 py-3 text-right opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="deleteEntry(${item.id})" class="text-red-400 hover:text-red-600 font-bold text-[10px] uppercase">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleLoanState(id, currentState) {
+            if (currentTab !== 'prestamos') return;
+            const loan = data.prestamos.find(p => p.id === id);
+            if (currentState === 'Pendiente') {
+                pendingLoanReturn = loan;
+                document.getElementById('loan-amount-modal').innerText = `Q ${loan.monto}`;
+                document.getElementById('loan-modal').classList.remove('hidden');
+            } else {
+                loan.estado = 'Pendiente';
+                saveData();
+                renderRows();
+            }
+        }
+
+        function processLoanReturn(shouldAddAsIncome) {
+            if (shouldAddAsIncome && pendingLoanReturn) {
+                data.ingresos.push({
+                    id: Date.now() + 1,
+                    fecha: new Date().toISOString().split('T')[0],
+                    concepto: `Devolución: ${pendingLoanReturn.persona}`,
+                    monto: pendingLoanReturn.monto,
+                    cuenta: 'Efectivo/Banco'
+                });
+            }
+            if (pendingLoanReturn) {
+                const loan = data.prestamos.find(p => p.id === pendingLoanReturn.id);
+                loan.estado = 'Devuelto';
+            }
+            document.getElementById('loan-modal').classList.add('hidden');
+            pendingLoanReturn = null;
+            saveData();
+            renderRows();
+        }
+
+        document.getElementById('entry-form').onsubmit = (e) => {
+            e.preventDefault();
+            const conf = config[currentTab];
+            const newItem = { id: Date.now() };
+            conf.fields.forEach(f => {
+                const el = document.getElementById(`input-${f}`);
+                newItem[f] = el.value;
+            });
+            data[currentTab].push(newItem);
+            saveData();
+            renderRows();
+            e.target.reset();
+        };
+
+        function deleteEntry(id) {
+            data[currentTab] = data[currentTab].filter(i => i.id !== id);
+            saveData();
+            renderRows();
+        }
+
+        function exportToCSV() {
+            let csv = "Categoría,Fecha,Concepto,Monto,Detalle\n";
+            Object.keys(data).forEach(cat => {
+                data[cat].forEach(row => {
+                    csv += `${cat},${row.fecha || row.mes || ''},${row.concepto || row.persona || row.tipo || ''},${row.monto},${row.cuenta || row.estado || row.objetivo || ''}\n`;
+                });
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Kevin_Finance_Full_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // Init
+        updateDashboard();
+    </script>
+</body>
+</html>
